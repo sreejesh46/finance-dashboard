@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { Plus, Edit2, Trash2, Loader2, X, TrendingUp, TrendingDown, ReceiptText, Search, Filter } from 'lucide-react';
+import { Plus, Edit2, Trash2, Loader2, X, TrendingUp, TrendingDown, ReceiptText, Search, Filter, DownloadCloud } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 const Records = () => {
   const { user } = useAuth();
@@ -17,6 +19,10 @@ const Records = () => {
   // Filters
   const [typeFilter, setTypeFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [limit, setLimit] = useState(10);
+  const [isGeneratingPDF, setIsGeneratingPDF] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -33,8 +39,11 @@ const Records = () => {
       const res = await axios.get('/records', {
         params: {
           page,
+          limit,
           type: typeFilter || undefined,
-          category: categoryFilter || undefined
+          category: categoryFilter || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined
         }
       });
       setRecords(res.data.records);
@@ -48,7 +57,7 @@ const Records = () => {
 
   useEffect(() => {
     fetchRecords();
-  }, [page, typeFilter, categoryFilter]);
+  }, [page, typeFilter, categoryFilter, startDate, endDate, limit]);
 
   const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this record forever?')) {
@@ -111,6 +120,97 @@ const Records = () => {
     }
   };
 
+  const generatePDF = async () => {
+    try {
+      setIsGeneratingPDF(true);
+      
+      const [analyticsRes, recordsRes] = await Promise.all([
+        axios.get('/records/analytics'),
+        axios.get('/records', { params: { limit: 1000 } })
+      ]);
+      
+      const { totalIncome, totalExpense, netBalance } = analyticsRes.data;
+      const reportRecords = recordsRes.data.records;
+      
+      const doc = new jsPDF();
+      
+      doc.setFontSize(22);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Financial Report Summary', 14, 22);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(100, 116, 139);
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}`, 14, 30);
+      
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Overview', 14, 45);
+      
+      // jsPDF default font doesn't support the ₹ symbol and renders it as a superscript 1.
+      // We will use 'Rs. ' as a plain text fallback.
+      const formatCurrencyForPDF = (num) => {
+        const formatted = new Intl.NumberFormat('en-IN', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 2
+        }).format(num || 0);
+        return `Rs. ${formatted}`;
+      };
+
+      const statsData = [
+        ['Total Income', formatCurrencyForPDF(totalIncome)],
+        ['Total Expense', formatCurrencyForPDF(totalExpense)],
+        ['Net Balance', formatCurrencyForPDF(netBalance)]
+      ];
+      
+      autoTable(doc, {
+        startY: 50,
+        head: [['Metric', 'Amount']],
+        body: statsData,
+        theme: 'grid',
+        headStyles: { fillColor: [99, 102, 241] },
+        styles: { fontSize: 11, cellPadding: 5 }
+      });
+      
+      const finalY = doc.lastAutoTable.finalY || 50;
+      doc.setFontSize(14);
+      doc.setTextColor(15, 23, 42);
+      doc.text('Recent Transactions', 14, finalY + 15);
+      
+      const tableData = reportRecords.map(record => [
+        new Date(record.date).toLocaleDateString(),
+        record.category,
+        record.type === 'income' ? `+${formatCurrencyForPDF(record.amount)}` : `-${formatCurrencyForPDF(record.amount)}`,
+        record.type.charAt(0).toUpperCase() + record.type.slice(1)
+      ]);
+      
+      autoTable(doc, {
+        startY: finalY + 20,
+        head: [['Date', 'Category', 'Amount', 'Type']],
+        body: tableData,
+        theme: 'striped',
+        headStyles: { fillColor: [99, 102, 241] },
+        styles: { fontSize: 10, cellPadding: 4 },
+        didParseCell: function (data) {
+           if (data.section === 'body' && data.column.index === 2) {
+              if (data.row.raw[3] === 'Income') {
+                 data.cell.styles.textColor = [16, 185, 129];
+              } else {
+                 data.cell.styles.textColor = [244, 63, 94];
+              }
+           }
+        }
+      });
+      
+      doc.save('Finance_Dashboard_Summary.pdf');
+      toast.success('PDF Report Generated Successfully');
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to generate PDF');
+    } finally {
+      setIsGeneratingPDF(false);
+    }
+  };
+
   const formatCur = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(num || 0);
 
   return (
@@ -125,15 +225,27 @@ const Records = () => {
             </h1>
             <p className="text-slate-500 font-medium mt-1">Track and filter all your historical income and expense transactions.</p>
          </div>
-         {user?.role === 'Admin' && !isFormOpen && (
-           <button 
-             onClick={() => openForm()}
-             className="flex items-center gap-2 bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all font-semibold"
-           >
-             <Plus className="w-5 h-5" />
-             Log Transaction
-           </button>
-         )}
+         <div className="flex flex-col sm:flex-row gap-3">
+           {(user?.role === 'Admin' || user?.role === 'Analyst') && !isFormOpen && (
+             <button 
+               onClick={generatePDF}
+               disabled={isGeneratingPDF}
+               className="flex items-center justify-center gap-2 bg-white text-slate-700 border border-slate-200 px-5 py-2.5 rounded-xl shadow-sm hover:bg-slate-50 hover:-translate-y-0.5 transition-all font-semibold disabled:opacity-50"
+             >
+               {isGeneratingPDF ? <Loader2 className="w-5 h-5 animate-spin" /> : <DownloadCloud className="w-5 h-5" />}
+               Summary Report
+             </button>
+           )}
+           {user?.role === 'Admin' && !isFormOpen && (
+             <button 
+               onClick={() => openForm()}
+               className="flex items-center justify-center gap-2 bg-gradient-to-tr from-indigo-500 to-indigo-600 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/40 hover:-translate-y-0.5 transition-all font-semibold"
+             >
+               <Plus className="w-5 h-5" />
+               Log Transaction
+             </button>
+           )}
+         </div>
       </div>
 
       {/* Inline Form Card */}
@@ -167,8 +279,8 @@ const Records = () => {
                          onChange={(e) => setFormData({...formData, type: e.target.value})}
                          className="w-full border border-slate-200/80 bg-slate-50/50 text-slate-800 font-semibold rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all hover:border-slate-300"
                        >
-                         <option value="income">Income (+)</option>
-                         <option value="expense">Expense (-)</option>
+                         <option value="income">Income</option>
+                         <option value="expense">Expense</option>
                        </select>
                      </div>
                      <div>
@@ -247,36 +359,69 @@ const Records = () => {
       )}
 
       {/* Modern Filter Bar */}
-      <div className="bg-white/70 backdrop-blur-md p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-wrap lg:flex-nowrap gap-5 items-end relative z-10 transition-all">
-         <div className="w-12 h-12 bg-slate-50 rounded-2xl flex items-center justify-center border border-slate-100 hidden sm:flex shrink-0">
+      <div className="bg-white/70 backdrop-blur-md p-5 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 flex flex-wrap gap-4 items-end relative z-10 transition-all">
+         <div className="w-12 h-12 bg-slate-50 rounded-2xl items-center justify-center border border-slate-100 hidden xl:flex shrink-0">
              <Filter className="w-5 h-5 text-slate-400" />
          </div>
          
-         <div className="flex flex-col gap-1.5 w-full sm:w-auto min-w-[180px]">
-           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Transaction Type</label>
+         <div className="flex flex-col gap-1.5 w-full sm:w-auto flex-1 min-w-[150px]">
+           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Type</label>
            <select 
               value={typeFilter} 
               onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
               className="bg-white border border-slate-200 text-slate-700 font-medium rounded-xl px-4 py-2.5 focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm cursor-pointer hover:border-slate-300"
            >
-             <option value="">All Transactions</option>
+             <option value="">All Types</option>
              <option value="income">Income Only</option>
              <option value="expense">Expenses Only</option>
            </select>
          </div>
+
+         <div className="flex flex-col gap-1.5 w-full sm:w-auto flex-1 min-w-[120px]">
+           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">From</label>
+           <input 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => { setStartDate(e.target.value); setPage(1); }} 
+              className="bg-white border border-slate-200 text-slate-700 font-medium rounded-xl px-4 py-2.5 w-full focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm hover:border-slate-300 cursor-pointer" 
+           />
+         </div>
+
+         <div className="flex flex-col gap-1.5 w-full sm:w-auto flex-1 min-w-[120px]">
+           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">To</label>
+           <input 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => { setEndDate(e.target.value); setPage(1); }} 
+              className="bg-white border border-slate-200 text-slate-700 font-medium rounded-xl px-4 py-2.5 w-full focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm hover:border-slate-300 cursor-pointer" 
+           />
+         </div>
          
-         <div className="flex flex-col gap-1.5 w-full sm:w-auto flex-1 max-w-md">
-           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Search Category</label>
+         <div className="flex flex-col gap-1.5 w-full sm:w-auto flex-[2] min-w-[200px]">
+           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Search Details</label>
            <div className="relative">
              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5 pointer-events-none" />
              <input 
                 type="text" 
-                placeholder="e.g. Sales, Subscriptions, Office Supplies..."
+                placeholder="Category or Details..."
                 value={categoryFilter} 
                 onChange={(e) => { setCategoryFilter(e.target.value); setPage(1); }}
                 className="bg-white border border-slate-200 text-slate-800 font-medium rounded-xl pl-10 pr-4 py-2.5 w-full focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm placeholder:text-slate-300 placeholder:font-normal hover:border-slate-300"
              />
            </div>
+         </div>
+
+         <div className="flex flex-col gap-1.5 w-full sm:w-auto shrink-0 min-w-[90px]">
+           <label className="text-xs font-bold text-slate-400 uppercase tracking-widest pl-1">Show</label>
+           <select 
+              value={limit} 
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1); }}
+              className="bg-white border border-slate-200 text-slate-700 font-medium rounded-xl px-4 py-2.5 w-full focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all shadow-sm cursor-pointer hover:border-slate-300"
+           >
+             <option value="10">10 / pg</option>
+             <option value="25">25 / pg</option>
+             <option value="50">50 / pg</option>
+           </select>
          </div>
       </div>
 

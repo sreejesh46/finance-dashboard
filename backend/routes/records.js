@@ -1,5 +1,6 @@
 const express = require('express');
 const Record = require('../models/Record');
+const Notification = require('../models/Notification');
 const { protect, authorize } = require('../middleware/authMiddleware');
 const Joi = require('joi');
 
@@ -56,7 +57,7 @@ const recordSchema = Joi.object({
 router.route('/')
     .get(protect, async (req, res) => {
         try {
-            const { type, category, startDate, endDate, page = 1, limit = 10 } = req.query;
+            const { type, category, startDate, endDate, search, page = 1, limit = 10 } = req.query;
             let query = {};
 
             if (type) query.type = type;
@@ -66,6 +67,13 @@ router.route('/')
                 query.date = {};
                 if (startDate) query.date.$gte = new Date(startDate);
                 if (endDate) query.date.$lte = new Date(endDate);
+            }
+
+            if (search) {
+                 query.$or = [
+                     { category: { $regex: search, $options: 'i' } },
+                     { notes: { $regex: search, $options: 'i' } }
+                 ];
             }
 
             const records = await Record.find(query)
@@ -109,6 +117,19 @@ router.route('/')
             });
 
             const createdRecord = await record.save();
+
+            // Auto-notify
+            const formatCur = (num) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(num || 0);
+            try {
+                await Notification.create({
+                    user: req.user._id,
+                    message: `New ${createdRecord.type} logged: ${formatCur(createdRecord.amount)} for ${createdRecord.category}`,
+                    type: createdRecord.type === 'income' ? 'success' : 'info'
+                });
+            } catch(e) {
+                console.error("Failed to generate notification: ", e);
+            }
+
             res.status(201).json(createdRecord);
         } catch (err) {
             res.status(500).json({ message: err.message });
@@ -129,7 +150,16 @@ router.route('/')
  */
 router.get('/analytics', protect, authorize('Admin', 'Analyst'), async (req, res) => {
     try {
-        const records = await Record.find();
+        const { startDate, endDate } = req.query;
+        let query = {};
+        
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) query.date.$gte = new Date(startDate);
+            if (endDate) query.date.$lte = new Date(endDate);
+        }
+
+        const records = await Record.find(query);
         
         // Basic aggregations
         const totalIncome = records.filter(r => r.type === 'income').reduce((acc, curr) => acc + curr.amount, 0);

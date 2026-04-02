@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ReceiptText, Users, LogOut, Menu, TrendingUp, Bell, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, ReceiptText, Users, LogOut, Menu, TrendingUp, Bell, Search, ChevronLeft, ChevronRight, Loader2, CheckCircle2, Clock } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -14,6 +15,90 @@ const Layout = () => {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Search State
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchResults, setShowSearchResults] = useState(false);
+  const searchRef = useRef(null);
+
+  // Notification State
+  const [notifications, setNotifications] = useState([]);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const notifRef = useRef(null);
+
+  // Debounced Search Effect
+  useEffect(() => {
+     if (!searchQuery.trim()) {
+        setSearchResults([]);
+        setShowSearchResults(false);
+        return;
+     }
+
+     const timer = setTimeout(async () => {
+        setIsSearching(true);
+        try {
+           const res = await axios.get('/records', { params: { search: searchQuery, limit: 5 } });
+           setSearchResults(res.data.records || []);
+           setShowSearchResults(true);
+        } catch(e) {
+           console.error("Search error", e);
+        } finally {
+           setIsSearching(false);
+        }
+     }, 300);
+
+     return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchNotifications = async () => {
+     try {
+         const res = await axios.get('/notifications');
+         setNotifications(res.data);
+     } catch(e) {
+         console.error("Failed to fetch notifications");
+     }
+  };
+
+  useEffect(() => {
+     if (user) {
+         fetchNotifications();
+     }
+  }, [user]);
+
+  useEffect(() => {
+     const handleClickOutside = (event) => {
+        if (searchRef.current && !searchRef.current.contains(event.target)) {
+           setShowSearchResults(false);
+        }
+        if (notifRef.current && !notifRef.current.contains(event.target)) {
+           setShowNotifications(false);
+        }
+     };
+     document.addEventListener('mousedown', handleClickOutside);
+     return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const markAsRead = async (id) => {
+      try {
+          await axios.put(`/notifications/${id}/read`);
+          setNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
+      } catch(e) {
+          console.error(e);
+      }
+  };
+
+  const markAllAsRead = async () => {
+      try {
+          await axios.put('/notifications/read-all');
+          setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      } catch(e) {
+          console.error(e);
+      }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
 
   const handleLogout = () => {
     logout();
@@ -105,9 +190,13 @@ const Layout = () => {
         {/* User Card */}
         <div className={cx("bg-slate-950 mt-auto border-t border-white/5", isCollapsed ? "p-2" : "p-4")}>
            <Link to="/profile" className={cx("flex items-center gap-3 rounded-2xl bg-white/5 border border-white/10 shadow-inner hover:bg-white/10 transition-colors cursor-pointer group", isCollapsed ? "p-2 justify-center" : "p-3")}>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 flex flex-shrink-0 items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 border-2 border-slate-950 group-hover:scale-105 transition-transform duration-300">
-                  {user?.name?.charAt(0).toUpperCase()}
-              </div>
+              {user?.avatar ? (
+                  <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover shadow-md shadow-indigo-500/20 border-2 border-slate-950 group-hover:scale-105 transition-transform duration-300" />
+              ) : (
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 flex flex-shrink-0 items-center justify-center text-white font-bold shadow-md shadow-indigo-500/20 border-2 border-slate-950 group-hover:scale-105 transition-transform duration-300">
+                      {user?.name?.charAt(0).toUpperCase()}
+                  </div>
+              )}
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-white truncate drop-shadow-sm group-hover:text-indigo-300 transition-colors">{user?.name}</p>
@@ -143,17 +232,100 @@ const Layout = () => {
             </button>
             <div className="flex-1 flex items-center justify-between lg:justify-end gap-6">
                 
-                {/* Search Bar (Cosmetic for Premium Feel) */}
-                <div className="hidden sm:flex items-center max-w-sm w-full relative">
-                    <Search className="w-4 h-4 absolute left-3 text-slate-400" />
-                    <input type="text" placeholder="Quick search..." className="w-full pl-9 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all shadow-sm" />
+                {/* Search Bar */}
+                <div ref={searchRef} className="hidden sm:flex flex-col max-w-sm w-full relative">
+                    <div className="relative flex items-center">
+                        <Search className="w-4 h-4 absolute left-3 text-slate-400" />
+                        <input 
+                           type="text" 
+                           placeholder="Quick search..." 
+                           value={searchQuery}
+                           onChange={(e) => setSearchQuery(e.target.value)}
+                           onFocus={() => { if (searchQuery.trim()) setShowSearchResults(true); }}
+                           className="w-full pl-9 pr-4 py-2 bg-slate-100/50 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 focus:bg-white transition-all shadow-sm" 
+                        />
+                        {isSearching && <Loader2 className="w-4 h-4 absolute right-3 text-indigo-500 animate-spin" />}
+                    </div>
+                    
+                    {/* Search Dropdown */}
+                    {showSearchResults && (
+                        <div className="absolute top-full mt-2 w-full bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden z-50">
+                            {searchResults.length > 0 ? (
+                                <ul className="divide-y divide-slate-100">
+                                    {searchResults.map(record => (
+                                        <li key={record._id}>
+                                           <Link 
+                                             to="/records" 
+                                             onClick={() => { setShowSearchResults(false); setSearchQuery(''); }}
+                                             className="block p-3 hover:bg-slate-50 transition-colors"
+                                           >
+                                              <p className="text-sm font-semibold text-slate-800 tracking-tight">{record.category}</p>
+                                              <div className="flex justify-between items-center mt-1">
+                                                <p className="text-xs text-slate-500 truncate max-w-[180px]">{record.notes || 'No description'}</p>
+                                                <p className={cx("text-xs font-bold", record.type === 'income' ? 'text-emerald-500' : 'text-slate-600')}>
+                                                    {record.type === 'income' ? '+' : '-'}{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.amount)}
+                                                </p>
+                                              </div>
+                                           </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            ) : (
+                                <div className="p-4 text-center text-sm font-medium text-slate-500">No records found</div>
+                            )}
+                        </div>
+                    )}
                 </div>
 
                 {/* Notifications */}
-                <button className="relative p-2 text-slate-400 hover:text-indigo-600 bg-white rounded-full shadow-sm border border-slate-200/60 hover:shadow-md transition-all active:scale-95">
-                    <span className="absolute top-0 right-0 w-2.5 h-2.5 bg-rose-500 border-2 border-white rounded-full"></span>
-                    <Bell className="w-5 h-5" />
-                </button>
+                <div ref={notifRef} className="relative">
+                    <button 
+                        onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) fetchNotifications(); }}
+                        className="relative p-2 text-slate-400 hover:text-indigo-600 bg-white rounded-full shadow-sm border border-slate-200/60 hover:shadow-md transition-all active:scale-95"
+                    >
+                        {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] font-bold text-white">{unreadCount}</span>}
+                        <Bell className="w-5 h-5" />
+                    </button>
+                    
+                    {/* Notifications Dropdown */}
+                    {showNotifications && (
+                        <div className="absolute top-full right-0 mt-2 w-80 max-h-96 flex flex-col bg-white border border-slate-100 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden z-50">
+                            <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                <h4 className="text-sm font-black text-slate-800">Notifications</h4>
+                                {unreadCount > 0 && (
+                                    <button onClick={markAllAsRead} className="text-xs font-bold text-indigo-500 hover:text-indigo-600">Mark all as read</button>
+                                )}
+                            </div>
+                            <div className="flex-1 overflow-y-auto custom-scrollbar">
+                                {notifications.length > 0 ? (
+                                    <ul className="divide-y divide-slate-50">
+                                        {notifications.map(notif => (
+                                            <li key={notif._id} className={cx("p-3 flex gap-3 transition-colors", notif.isRead ? "bg-white opacity-60" : "bg-indigo-50/30")}>
+                                                <div className="mt-0.5">
+                                                    {notif.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : 
+                                                     notif.type === 'alert' ? <Bell className="w-4 h-4 text-rose-500" /> :
+                                                     <Clock className="w-4 h-4 text-indigo-400" />}
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className={cx("text-sm transition-all", notif.isRead ? "text-slate-600 font-medium" : "text-slate-800 font-semibold")}>{notif.message}</p>
+                                                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">{new Date(notif.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                                {!notif.isRead && (
+                                                    <button onClick={() => markAsRead(notif._id)} className="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0 self-center hover:scale-150 transition-transform" title="Mark as read" />
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                ) : (
+                                    <div className="p-6 text-center text-sm font-medium text-slate-500 flex flex-col items-center">
+                                        <Bell className="w-8 h-8 text-slate-200 mb-2" />
+                                        You're all caught up!
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
 

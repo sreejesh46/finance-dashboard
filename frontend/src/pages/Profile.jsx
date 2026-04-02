@@ -1,11 +1,15 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
+import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { Camera, Save, Lock, User, Mail, Loader2, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [avatar, setAvatar] = useState(user?.avatar || '');
+  const fileInputRef = useRef(null);
+  
   const [formData, setFormData] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -17,13 +21,43 @@ const Profile = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        toast.error('Image size must be less than 2MB');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatar(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSave = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setLoading(false);
-    toast.success('Profile updated successfully!');
+    try {
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        avatar: avatar
+      };
+      if (formData.newPassword) {
+        payload.currentPassword = formData.currentPassword;
+        payload.newPassword = formData.newPassword;
+      }
+      const res = await axios.put('/auth/profile', payload);
+      setUser(res.data);
+      setFormData({ ...formData, currentPassword: '', newPassword: '' });
+      toast.success('Profile updated successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,12 +76,17 @@ const Profile = () => {
               
               <div className="flex flex-col items-center pt-4">
                  <div className="relative mb-6">
-                    <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 flex items-center justify-center text-white text-5xl font-black shadow-xl shadow-indigo-500/20 border-4 border-white">
-                        {formData.name.charAt(0).toUpperCase()}
-                    </div>
-                    <button className="absolute bottom-0 right-0 p-3 bg-slate-900 text-white rounded-full hover:bg-indigo-600 transition-colors shadow-lg border-4 border-white group-hover:scale-110 duration-200">
+                    {avatar ? (
+                        <img src={avatar} alt="Profile" className="w-32 h-32 rounded-full object-cover shadow-xl shadow-indigo-500/20 border-4 border-white" />
+                    ) : (
+                        <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-indigo-400 to-purple-400 flex items-center justify-center text-white text-5xl font-black shadow-xl shadow-indigo-500/20 border-4 border-white">
+                            {formData.name.charAt(0).toUpperCase()}
+                        </div>
+                    )}
+                    <button onClick={() => fileInputRef.current?.click()} className="absolute bottom-0 right-0 p-3 bg-slate-900 text-white rounded-full hover:bg-indigo-600 transition-colors shadow-lg border-4 border-white group-hover:scale-110 duration-200">
                        <Camera className="w-5 h-5" />
                     </button>
+                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleFileChange} className="hidden" />
                  </div>
                  
                  <h3 className="text-2xl font-bold text-slate-900">{formData.name}</h3>

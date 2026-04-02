@@ -14,6 +14,10 @@ const userSchema = new mongoose.Schema({
         trim: true,
         lowercase: true,
     },
+    avatar: {
+        type: String, // To store Base64
+        default: '',
+    },
     password: {
         type: String,
         required: [true, 'Password is required'],

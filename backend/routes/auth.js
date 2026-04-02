@@ -69,6 +69,7 @@ router.post('/register', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                avatar: user.avatar,
                 token: generateToken(user._id),
             });
         } else {
@@ -127,6 +128,7 @@ router.post('/login', async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                avatar: user.avatar,
                 token: generateToken(user._id),
             });
         } else {
@@ -156,6 +158,62 @@ router.get('/me', protect, async (req, res) => {
         const user = await User.findById(req.user._id).select('-password');
         if (user) {
             res.json(user);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+/**
+ * @swagger
+ * /api/auth/profile:
+ *   put:
+ *     summary: Update current user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Success
+ */
+router.put('/profile', protect, async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.name = req.body.name || user.name;
+            if (req.body.email && req.body.email !== user.email) {
+                // If checking for unique emails manually is required
+                const emailExists = await User.findOne({ email: req.body.email });
+                if (emailExists) return res.status(400).json({ message: 'Email is already taken' });
+                user.email = req.body.email;
+            }
+            if (req.body.avatar !== undefined) {
+                user.avatar = req.body.avatar;
+            }
+            
+            if (req.body.newPassword && req.body.currentPassword) {
+                if (await user.matchPassword(req.body.currentPassword)) {
+                    user.password = req.body.newPassword;
+                } else {
+                    return res.status(400).json({ message: 'Current password is incorrect' });
+                }
+            } else if (req.body.newPassword) {
+                 return res.status(400).json({ message: 'Current password is required to set a new password' });
+            }
+
+            const updatedUser = await user.save();
+
+            res.json({
+                _id: updatedUser._id,
+                name: updatedUser.name,
+                email: updatedUser.email,
+                role: updatedUser.role,
+                avatar: updatedUser.avatar,
+                token: generateToken(updatedUser._id),
+            });
         } else {
             res.status(404).json({ message: 'User not found' });
         }

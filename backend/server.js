@@ -36,6 +36,7 @@ app.use(express.json());
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/users', require('./routes/users'));
 app.use('/api/records', require('./routes/records'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // Swagger Documentation setup
 const options = {

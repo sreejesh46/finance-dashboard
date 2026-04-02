@@ -36,17 +36,27 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [recentRecords, setRecentRecords] = useState([]);
+  const [timeFilter, setTimeFilter] = useState('7_days');
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+        let dateQuery = '';
+        if (timeFilter !== 'all_time') {
+           const days = timeFilter === '7_days' ? 7 : 30;
+           const d = new Date();
+           d.setDate(d.getDate() - days);
+           dateQuery = `?startDate=${d.toISOString()}`;
+        }
+
         // Fetch analytics
-        const analyticsRes = await axios.get('/records/analytics');
+        const analyticsRes = await axios.get(`/records/analytics${dateQuery}`);
         setData(analyticsRes.data);
 
         // Fetch recent records
-        const recordsRes = await axios.get('/records?limit=6');
+        const recordsQuery = dateQuery ? `&startDate=${dateQuery.split('=')[1]}` : '';
+        const recordsRes = await axios.get(`/records?limit=6${recordsQuery}`);
         setRecentRecords(recordsRes.data.records);
       } catch (err) {
         console.error(err);
@@ -68,7 +78,7 @@ const Dashboard = () => {
     } else {
       fetchDashboardData();
     }
-  }, [user]);
+  }, [user, timeFilter]);
 
   if (loading) {
     return (
@@ -189,9 +199,9 @@ const Dashboard = () => {
          </div>
          {user?.role !== 'Viewer' && (
              <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-                 <button className="px-4 py-2 text-sm font-semibold rounded-lg bg-slate-100 text-slate-900 transition-colors">7 Days</button>
-                 <button className="px-4 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-900 transition-colors">30 Days</button>
-                 <button className="px-4 py-2 text-sm font-semibold rounded-lg text-slate-500 hover:text-slate-900 transition-colors">All Time</button>
+                 <button onClick={() => setTimeFilter('7_days')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${timeFilter === '7_days' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>7 Days</button>
+                 <button onClick={() => setTimeFilter('30_days')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${timeFilter === '30_days' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>30 Days</button>
+                 <button onClick={() => setTimeFilter('all_time')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${timeFilter === 'all_time' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>All Time</button>
              </div>
          )}
       </div>

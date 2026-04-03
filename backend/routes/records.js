@@ -55,7 +55,7 @@ const recordSchema = Joi.object({
  *         description: List of records
  */
 router.route('/')
-    .get(protect, async (req, res) => {
+    .get(protect, authorize('Analyst', 'Admin'), async (req, res) => {
         try {
             const { type, category, startDate, endDate, search, page = 1, limit = 10 } = req.query;
             let query = {};
@@ -148,7 +148,7 @@ router.route('/')
  *       200:
  *         description: Analytics data
  */
-router.get('/analytics', protect, authorize('Admin', 'Analyst'), async (req, res) => {
+router.get('/analytics', protect, authorize('Viewer', 'Analyst', 'Admin'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         let query = {};

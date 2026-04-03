@@ -107,7 +107,7 @@ const Layout = () => {
 
   const navItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard, roles: ['Viewer', 'Analyst', 'Admin'] },
-    { name: 'Financial Records', path: '/records', icon: ReceiptText, roles: ['Viewer', 'Analyst', 'Admin'] },
+    { name: 'Financial Records', path: '/records', icon: ReceiptText, roles: ['Analyst', 'Admin'] },
     { name: 'User Management', path: '/users', icon: Users, roles: ['Admin'] },
   ];
 
@@ -216,7 +216,7 @@ const Layout = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col w-0 overflow-hidden relative">
+      <div className="flex-1 flex flex-col w-0 min-w-0 overflow-hidden relative">
         
         {/* Dynamic Frosted Topbar */}
         <div className="absolute top-0 w-full z-20 pointer-events-none">
@@ -230,10 +230,11 @@ const Layout = () => {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <div className="flex-1 flex items-center justify-between lg:justify-end gap-6">
+            <div className="flex-1 min-w-0 flex items-center justify-between lg:justify-end gap-6">
                 
                 {/* Search Bar */}
-                <div ref={searchRef} className="hidden sm:flex flex-col max-w-sm w-full relative">
+                {user?.role !== 'Viewer' && (
+                <div ref={searchRef} className="hidden sm:flex flex-col max-w-sm w-full min-w-0 relative">
                     <div className="relative flex items-center">
                         <Search className="w-4 h-4 absolute left-3 text-slate-400" />
                         <input 
@@ -276,6 +277,7 @@ const Layout = () => {
                         </div>
                     )}
                 </div>
+                )}
 
                 {/* Notifications */}
                 <div ref={notifRef} className="relative">
@@ -330,12 +332,12 @@ const Layout = () => {
         </div>
 
         {/* Page Content Scrollable Area */}
-        <main className="flex-1 relative overflow-y-auto focus:outline-none bg-[#f8fafc] scroll-smooth">
+        <main className="flex-1 relative overflow-y-auto overflow-x-hidden focus:outline-none bg-[#f8fafc] scroll-smooth">
           {/* Subtle Background Elements */}
           <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-indigo-500/5 blur-[120px] rounded-full pointer-events-none"></div>
           <div className="absolute top-[20%] right-[-10%] w-[30%] h-[40%] bg-purple-500/5 blur-[120px] rounded-full pointer-events-none"></div>
 
-          <div className="py-8 px-4 sm:px-8 h-full relative z-10 mx-auto max-w-[1600px]">
+          <div className="py-8 px-4 sm:px-8 h-full relative z-10 mx-auto max-w-[1600px] min-w-0">
              <Outlet />
           </div>
         </main>

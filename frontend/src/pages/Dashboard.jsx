@@ -54,10 +54,14 @@ const Dashboard = () => {
         const analyticsRes = await axios.get(`/records/analytics${dateQuery}`);
         setData(analyticsRes.data);
 
-        // Fetch recent records
-        const recordsQuery = dateQuery ? `&startDate=${dateQuery.split('=')[1]}` : '';
-        const recordsRes = await axios.get(`/records?limit=6${recordsQuery}`);
-        setRecentRecords(recordsRes.data.records);
+        if (user?.role !== 'Viewer') {
+          // Fetch recent records for roles with record access
+          const recordsQuery = dateQuery ? `&startDate=${dateQuery.split('=')[1]}` : '';
+          const recordsRes = await axios.get(`/records?limit=6${recordsQuery}`);
+          setRecentRecords(recordsRes.data.records);
+        } else {
+          setRecentRecords([]);
+        }
       } catch (err) {
         console.error(err);
         toast.error('Failed to load dashboard data');
@@ -65,19 +69,8 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-    
-    // Viewer fallback gracefully
-    if (user?.role === 'Viewer') {
-      const fetchViewerData = async () => {
-         try {
-           const recordsRes = await axios.get('/records?limit=6');
-           setRecentRecords(recordsRes.data.records);
-         } catch(e) {} finally { setLoading(false); }
-      };
-      fetchViewerData();
-    } else {
-      fetchDashboardData();
-    }
+
+    fetchDashboardData();
   }, [user, timeFilter]);
 
   if (loading) {
@@ -187,7 +180,7 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both pb-20">
+    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both pb-20 min-w-0">
       
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 relative z-10">
@@ -207,7 +200,7 @@ const Dashboard = () => {
       </div>
 
       {/* KPI Cards Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 min-w-0">
         
         {/* Net Balance Card */}
         <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] transition-all duration-300">
@@ -271,14 +264,14 @@ const Dashboard = () => {
       </div>
 
       {/* Main Charts Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10 min-w-0">
          
          {/* Cash Flow Line Chart */}
-         <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 col-span-2 flex flex-col min-h-[400px]">
+         <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 col-span-2 flex flex-col min-h-[400px] min-w-0">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-slate-900">Cash Flow Trends</h2>
             </div>
-            <div className="relative flex-1 w-full h-full">
+            <div className="relative flex-1 w-full h-full min-w-0">
                {months.length > 0 ? (
                   <Line data={lineChartData} options={commonOptions} />
                ) : (
@@ -288,11 +281,11 @@ const Dashboard = () => {
          </div>
 
          {/* Category Breakdown Doughnut Chart */}
-         <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 col-span-1 flex flex-col min-h-[400px]">
+         <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 col-span-1 flex flex-col min-h-[400px] min-w-0">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-slate-900">Spending by Category</h2>
             </div>
-            <div className="relative flex-1 flex justify-center items-center w-full h-full">
+            <div className="relative flex-1 flex justify-center items-center w-full h-full min-w-0">
                {categories.length > 0 ? (
                  <div className="absolute inset-0 pb-4">
                    <Doughnut data={doughnutData} options={{...commonOptions, cutOut: '75%', plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } } }}} />
@@ -305,6 +298,7 @@ const Dashboard = () => {
       </div>
 
       {/* Modern Transaction Ledger */}
+      {user?.role !== 'Viewer' && (
       <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative z-10">
          <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
             <h3 className="text-xl font-bold text-slate-900">Recent Transactions</h3>
@@ -362,6 +356,7 @@ const Dashboard = () => {
              </div>
          )}
       </div>
+      )}
     </div>
   );
 };

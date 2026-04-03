@@ -150,9 +150,9 @@ const Login = () => {
 
            {/* Create Account Link */}
            <p className="mt-8 text-center text-sm font-medium text-slate-400">
-             Don't have an enterprise account?{' '}
+             Don't have an account?{' '}
              <Link to="/register" className="font-bold text-indigo-400 hover:text-indigo-300 transition-colors underline decoration-indigo-400/30 underline-offset-4 hover:decoration-indigo-300">
-               Request trial access
+               Sign up
              </Link>
            </p>
 

@@ -86,11 +86,11 @@ The system leverages JWT tokens to enforce access layers. There are three tiers:
 
 1. **Viewer**:
    - Least privilege.
-   - Can read standard records via `GET /api/records`.
-   - Cannot create, update, or delete records. Cannot view system-wide `.analytics` aggregations.
+   - Can access dashboard summary data via `GET /api/records/analytics`.
+   - Cannot access the records listing or create, update, or delete records.
    
 2. **Analyst**:
-   - Can view standard records.
+   - Can view standard records via `GET /api/records`.
    - Can access `GET /api/records/analytics` to view the aggregated dashboard data and insights (Total balances, categorized spending, trends).
    - Cannot modify records or manage users.
    

@@ -34,7 +34,7 @@ function AppRoutes() {
       <Route path="/register" element={<Register />} />
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index element={<Dashboard />} />
-        <Route path="records" element={<Records />} />
+        <Route path="records" element={<ProtectedRoute allowedRoles={['Analyst', 'Admin']}><Records /></ProtectedRoute>} />
         <Route path="users" element={<ProtectedRoute allowedRoles={['Admin']}><Users /></ProtectedRoute>} />
         <Route path="profile" element={<Profile />} />
       </Route>

@@ -135,9 +135,17 @@ const Users = () => {
                   <tr key={u._id} className="hover:bg-slate-50/60 transition-colors group cursor-default">
                     <td className="px-8 py-5">
                         <div className="flex items-center gap-4">
-                           <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300/50 flex items-center justify-center font-black text-slate-600 shadow-sm shrink-0">
+                           {u.avatar ? (
+                             <img
+                               src={u.avatar}
+                               alt={u.name}
+                               className="w-10 h-10 rounded-[10px] object-cover border border-slate-300/50 shadow-sm shrink-0"
+                             />
+                           ) : (
+                             <div className="w-10 h-10 rounded-[10px] bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-300/50 flex items-center justify-center font-black text-slate-600 shadow-sm shrink-0">
                                {u.name.charAt(0).toUpperCase()}
-                           </div>
+                             </div>
+                           )}
                            <div className="flex flex-col">
                               <span className="text-slate-800 font-bold tracking-tight">{u.name}</span>
                               <span className="text-xs text-slate-400 font-medium">{u.email}</span>

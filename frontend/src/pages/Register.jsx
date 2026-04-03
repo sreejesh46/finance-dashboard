@@ -174,9 +174,9 @@ const Register = () => {
 
            {/* Switch to Login Link */}
            <p className="mt-8 text-center text-sm font-medium text-slate-400">
-             Already have an identity mapped?{' '}
+             Already have an account?{' '}
              <Link to="/login" className="font-bold text-blue-400 hover:text-blue-300 transition-colors underline decoration-blue-400/30 underline-offset-4 hover:decoration-blue-300">
-               Authenticate here
+               Login
              </Link>
            </p>
 

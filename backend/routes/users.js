@@ -1,8 +1,16 @@
 const express = require('express');
 const User = require('../models/User');
 const { protect, authorize } = require('../middleware/authMiddleware');
+const Joi = require('joi');
 
 const router = express.Router();
+
+const updateUserSchema = Joi.object({
+    name: Joi.string().trim().min(1).required(),
+    email: Joi.string().email().required(),
+    role: Joi.string().valid('Viewer', 'Analyst', 'Admin').required(),
+    status: Joi.string().valid('active', 'inactive').required(),
+});
 
 /**
  * @swagger
@@ -77,13 +85,25 @@ router.route('/:id')
      */
     .put(protect, authorize('Admin'), async (req, res) => {
         try {
+            const { error } = updateUserSchema.validate(req.body);
+            if (error) {
+                return res.status(400).json({ message: error.details[0].message });
+            }
+
             const user = await User.findById(req.params.id);
 
             if (user) {
-                user.name = req.body.name || user.name;
-                user.email = req.body.email || user.email;
-                user.role = req.body.role || user.role;
-                user.status = req.body.status || user.status;
+                if (req.body.email !== user.email) {
+                    const existingUser = await User.findOne({ email: req.body.email });
+                    if (existingUser) {
+                        return res.status(400).json({ message: 'Email is already taken' });
+                    }
+                }
+
+                user.name = req.body.name;
+                user.email = req.body.email;
+                user.role = req.body.role;
+                user.status = req.body.status;
 
                 const updatedUser = await user.save();
                 res.json({
@@ -91,7 +111,8 @@ router.route('/:id')
                     name: updatedUser.name,
                     email: updatedUser.email,
                     role: updatedUser.role,
-                    status: updatedUser.status
+                    status: updatedUser.status,
+                    avatar: updatedUser.avatar
                 });
             } else {
                 res.status(404).json({ message: 'User not found' });

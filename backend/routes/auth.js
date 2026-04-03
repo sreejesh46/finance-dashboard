@@ -12,6 +12,17 @@ const generateToken = (id) => {
     });
 };
 
+const formatAuthUser = (user) => ({
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    status: user.status,
+    avatar: user.avatar,
+    createdAt: user.createdAt,
+    token: generateToken(user._id),
+});
+
 const registerSchema = Joi.object({
     name: Joi.string().required(),
     email: Joi.string().email().required(),
@@ -64,14 +75,7 @@ router.post('/register', async (req, res) => {
         });
 
         if (user) {
-            res.status(201).json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                avatar: user.avatar,
-                token: generateToken(user._id),
-            });
+            res.status(201).json(formatAuthUser(user));
         } else {
             res.status(400).json({ message: 'Invalid user data' });
         }
@@ -83,6 +87,14 @@ router.post('/register', async (req, res) => {
 const loginSchema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().required()
+});
+
+const profileUpdateSchema = Joi.object({
+    name: Joi.string().trim().min(1).required(),
+    email: Joi.string().email().required(),
+    avatar: Joi.string().allow('').optional(),
+    currentPassword: Joi.string().allow('').optional(),
+    newPassword: Joi.string().min(6).allow('').optional(),
 });
 
 /**
@@ -123,14 +135,7 @@ router.post('/login', async (req, res) => {
         }
 
         if (user && (await user.matchPassword(password))) {
-            res.json({
-                _id: user._id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
-                avatar: user.avatar,
-                token: generateToken(user._id),
-            });
+            res.json(formatAuthUser(user));
         } else {
             res.status(401).json({ message: 'Invalid email or password' });
         }
@@ -180,6 +185,11 @@ router.get('/me', protect, async (req, res) => {
  */
 router.put('/profile', protect, async (req, res) => {
     try {
+        const { error } = profileUpdateSchema.validate(req.body);
+        if (error) {
+            return res.status(400).json({ message: error.details[0].message });
+        }
+
         const user = await User.findById(req.user._id);
 
         if (user) {
@@ -206,14 +216,7 @@ router.put('/profile', protect, async (req, res) => {
 
             const updatedUser = await user.save();
 
-            res.json({
-                _id: updatedUser._id,
-                name: updatedUser.name,
-                email: updatedUser.email,
-                role: updatedUser.role,
-                avatar: updatedUser.avatar,
-                token: generateToken(updatedUser._id),
-            });
+            res.json(formatAuthUser(updatedUser));
         } else {
             res.status(404).json({ message: 'User not found' });
         }

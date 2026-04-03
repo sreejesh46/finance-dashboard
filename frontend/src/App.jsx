@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import Records from './pages/Records';
 import Users from './pages/Users';
 import Profile from './pages/Profile';
+import { Loader2 } from 'lucide-react';
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
   const { user, loading } = useAuth();
@@ -43,11 +44,29 @@ function AppRoutes() {
   );
 }
 
+function AuthTransitionOverlay() {
+  const { authTransition } = useAuth();
+
+  return (
+    <div
+      className={`fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/45 backdrop-blur-sm transition-all duration-300 ${
+        authTransition.active ? 'pointer-events-auto opacity-100' : 'pointer-events-none opacity-0'
+      }`}
+    >
+      <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-900 px-5 py-3 text-white shadow-2xl">
+        <Loader2 className="h-5 w-5 animate-spin text-indigo-400" />
+        <span className="text-sm font-semibold">{authTransition.message || 'Please wait...'}</span>
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <AppRoutes />
+        <AuthTransitionOverlay />
         <Toaster position="top-right" />
       </Router>
     </AuthProvider>

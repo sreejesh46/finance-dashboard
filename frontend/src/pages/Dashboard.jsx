@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link as RouterLink } from 'react-router-dom';
 import axios from 'axios';
 import {
   Chart as ChartJS,
@@ -185,16 +186,16 @@ const Dashboard = () => {
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-4 relative z-10">
          <div>
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-500">
+            <h1 className="text-3xl font-extrabold text-slate-950 tracking-tight">
                Financial Overview
             </h1>
             <p className="text-slate-500 font-medium mt-1">Here's your comprehensive financial summary for today.</p>
          </div>
          {user?.role !== 'Viewer' && (
-             <div className="flex bg-white p-1 rounded-xl shadow-sm border border-slate-200">
-                 <button onClick={() => setTimeFilter('7_days')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${timeFilter === '7_days' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>7 Days</button>
-                 <button onClick={() => setTimeFilter('30_days')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${timeFilter === '30_days' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>30 Days</button>
-                 <button onClick={() => setTimeFilter('all_time')} className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors ${timeFilter === 'all_time' ? 'bg-slate-100 text-slate-900' : 'text-slate-500 hover:text-slate-900'}`}>All Time</button>
+             <div className="flex bg-white p-1.5 rounded-2xl shadow-sm border border-slate-200">
+                 <button onClick={() => setTimeFilter('7_days')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${timeFilter === '7_days' ? 'bg-[#156EF3] text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>7 Days</button>
+                 <button onClick={() => setTimeFilter('30_days')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${timeFilter === '30_days' ? 'bg-[#156EF3] text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>30 Days</button>
+                 <button onClick={() => setTimeFilter('all_time')} className={`px-4 py-2 text-sm font-semibold rounded-xl transition-colors cursor-pointer ${timeFilter === 'all_time' ? 'bg-[#156EF3] text-white shadow-sm' : 'text-slate-500 hover:text-slate-900'}`}>All Time</button>
              </div>
          )}
       </div>
@@ -203,8 +204,8 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 relative z-10 min-w-0">
         
         {/* Net Balance Card */}
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(99,102,241,0.1)] transition-all duration-300">
-            <div className="absolute right-0 top-0 w-32 h-32 bg-indigo-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.05)] border border-slate-200 relative overflow-hidden group transition-all duration-300">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-sky-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
             <div className="relative flex items-center justify-between z-10">
                 <div>
                    <p className="text-sm font-bold tracking-wide text-slate-400 uppercase">Net Balance</p>
@@ -216,15 +217,15 @@ const Dashboard = () => {
                        <span className="text-slate-400">vs last month</span>
                    </div>
                 </div>
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-indigo-600 flex justify-center items-center shadow-lg shadow-indigo-500/30 text-white">
+                <div className="w-14 h-14 rounded-2xl bg-[#156EF3] flex justify-center items-center shadow-lg shadow-sky-200 text-white">
                    <Wallet className="w-7 h-7" />
                 </div>
             </div>
         </div>
 
         {/* Total Income Card */}
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(16,185,129,0.1)] transition-all duration-300">
-            <div className="absolute right-0 top-0 w-32 h-32 bg-emerald-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.05)] border border-slate-200 relative overflow-hidden group transition-all duration-300">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-sky-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
             <div className="relative flex items-center justify-between z-10">
                 <div>
                    <p className="text-sm font-bold tracking-wide text-slate-400 uppercase">Total Income</p>
@@ -236,15 +237,15 @@ const Dashboard = () => {
                        <span className="text-slate-400">vs last month</span>
                    </div>
                 </div>
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-teal-500 flex justify-center items-center shadow-lg shadow-emerald-500/30 text-white">
+                <div className="w-14 h-14 rounded-2xl bg-[#156EF3] flex justify-center items-center shadow-lg shadow-sky-200 text-white">
                    <TrendingUp className="w-7 h-7" />
                 </div>
             </div>
         </div>
 
         {/* Total Expense Card */}
-        <div className="bg-white rounded-3xl p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 relative overflow-hidden group hover:shadow-[0_8px_30px_rgb(244,63,94,0.1)] transition-all duration-300">
-            <div className="absolute right-0 top-0 w-32 h-32 bg-rose-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
+        <div className="bg-white rounded-[28px] p-6 shadow-[0_18px_40px_rgba(15,23,42,0.05)] border border-slate-200 relative overflow-hidden group transition-all duration-300">
+            <div className="absolute right-0 top-0 w-32 h-32 bg-sky-50 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110"></div>
             <div className="relative flex items-center justify-between z-10">
                 <div>
                    <p className="text-sm font-bold tracking-wide text-slate-400 uppercase">Total Expenses</p>
@@ -256,7 +257,7 @@ const Dashboard = () => {
                        <span className="text-slate-400">vs last month</span>
                    </div>
                 </div>
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-pink-500 flex justify-center items-center shadow-lg shadow-rose-500/30 text-white">
+                <div className="w-14 h-14 rounded-2xl bg-[#156EF3] flex justify-center items-center shadow-lg shadow-sky-200 text-white">
                    <TrendingDown className="w-7 h-7" />
                 </div>
             </div>
@@ -267,7 +268,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 relative z-10 min-w-0">
          
          {/* Cash Flow Line Chart */}
-         <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 col-span-2 flex flex-col min-h-[400px] min-w-0">
+         <div className="bg-white p-6 rounded-[28px] shadow-[0_18px_40px_rgba(15,23,42,0.05)] border border-slate-200 col-span-2 flex flex-col min-h-[400px] min-w-0">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-slate-900">Cash Flow Trends</h2>
             </div>
@@ -281,7 +282,7 @@ const Dashboard = () => {
          </div>
 
          {/* Category Breakdown Doughnut Chart */}
-         <div className="bg-white p-6 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 col-span-1 flex flex-col min-h-[400px] min-w-0">
+         <div className="bg-white p-6 rounded-[28px] shadow-[0_18px_40px_rgba(15,23,42,0.05)] border border-slate-200 col-span-1 flex flex-col min-h-[400px] min-w-0">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-xl font-bold text-slate-900">Spending by Category</h2>
             </div>
@@ -299,10 +300,12 @@ const Dashboard = () => {
 
       {/* Modern Transaction Ledger */}
       {user?.role !== 'Viewer' && (
-      <div className="bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 overflow-hidden relative z-10">
-         <div className="px-8 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+      <div className="bg-white rounded-[28px] shadow-[0_18px_40px_rgba(15,23,42,0.05)] border border-slate-200 overflow-hidden relative z-10">
+         <div className="px-8 py-6 border-b border-slate-200 flex justify-between items-center bg-slate-50/70">
             <h3 className="text-xl font-bold text-slate-900">Recent Transactions</h3>
-            <button className="text-sm font-semibold text-indigo-600 hover:text-indigo-700 transition-colors">View All →</button>
+            <RouterLink to="/records" className="text-sm font-semibold text-sky-600 hover:text-sky-700 transition-colors">
+              View All →
+            </RouterLink>
          </div>
          
          {recentRecords.length === 0 ? (

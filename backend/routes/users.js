@@ -100,6 +100,22 @@ router.route('/:id')
                     }
                 }
 
+                const isAdminChange = user.role === 'Admin' && req.body.role !== 'Admin';
+                const isAdminDeactivation = user.role === 'Admin' && req.body.status !== 'active';
+
+                if (isAdminChange || isAdminDeactivation) {
+                    const activeAdminCount = await User.countDocuments({
+                        role: 'Admin',
+                        status: 'active'
+                    });
+
+                    if (activeAdminCount <= 1) {
+                        return res.status(400).json({
+                            message: 'At least one active admin must remain in the system'
+                        });
+                    }
+                }
+
                 user.name = req.body.name;
                 user.email = req.body.email;
                 user.role = req.body.role;
@@ -145,6 +161,17 @@ router.route('/:id')
 
             if (user) {
                 if (user.role === 'Admin') {
+                    const activeAdminCount = await User.countDocuments({
+                        role: 'Admin',
+                        status: 'active'
+                    });
+
+                    if (user.status === 'active' && activeAdminCount <= 1) {
+                        return res.status(400).json({
+                            message: 'Cannot delete the last active admin account'
+                        });
+                    }
+
                     return res.status(400).json({ message: 'Cannot delete an Admin account' });
                 }
                 await User.deleteOne({ _id: user._id });

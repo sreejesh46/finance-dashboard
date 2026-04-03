@@ -17,6 +17,14 @@ const Users = () => {
     status: 'active'
   });
 
+  const activeAdminCount = users.filter((u) => u.role === 'Admin' && u.status === 'active').length;
+  const isEditingLastActiveAdmin =
+    editingUser?.role === 'Admin' &&
+    editingUser?.status === 'active' &&
+    activeAdminCount <= 1;
+  const roleLocked = isEditingLastActiveAdmin;
+  const statusLocked = isEditingLastActiveAdmin;
+
   const fetchUsers = async () => {
     try {
       setLoading(true);
@@ -35,7 +43,11 @@ const Users = () => {
 
   const handleDelete = async (user) => {
     if (user.role === 'Admin') {
-      toast.error('Cannot securely delete an Admin account');
+      if (user.status === 'active' && activeAdminCount <= 1) {
+        toast.error('Cannot delete the last active admin account');
+      } else {
+        toast.error('Cannot securely delete an Admin account');
+      }
       return;
     }
     if (window.confirm(`Are you absolutely sure you want to delete ${user.name}? This action cannot be undone.`)) {
@@ -66,6 +78,16 @@ const Users = () => {
     e.preventDefault();
     try {
       if (editingUser) {
+        if (isEditingLastActiveAdmin && formData.role !== 'Admin') {
+          toast.error('You cannot change the last active admin to another role');
+          return;
+        }
+
+        if (isEditingLastActiveAdmin && formData.status !== 'active') {
+          toast.error('You cannot deactivate the last active admin');
+          return;
+        }
+
         await axios.put(`/users/${editingUser._id}`, formData);
         toast.success('Access configuration updated');
       }
@@ -250,23 +272,40 @@ const Users = () => {
                         <select 
                           value={formData.role}
                           onChange={(e) => setFormData({...formData, role: e.target.value})}
-                          className="w-full border border-slate-200 bg-slate-50/50 text-slate-800 font-black rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
+                          disabled={roleLocked}
+                          className="w-full border border-slate-200 bg-slate-50/50 text-slate-800 font-black rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed"
                         >
                           <option value="Viewer">Viewer (Read-Only)</option>
                           <option value="Analyst">Analyst (Insights)</option>
                           <option value="Admin">Admin (Full Access)</option>
                         </select>
+                        {roleLocked && (
+                          <p className="text-[11px] text-amber-600 font-medium tracking-wide mt-1.5 ml-1">
+                            This role is locked because at least one active admin must remain.
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-xs font-bold text-slate-400 uppercase tracking-widest pl-1 mb-1.5">Account Status</label>
                         <select 
                           value={formData.status}
-                          onChange={(e) => setFormData({...formData, status: e.target.value})}
+                          onChange={(e) => {
+                            if (isEditingLastActiveAdmin && e.target.value !== 'active') {
+                              toast.error('You cannot deactivate the last active admin');
+                              return;
+                            }
+                            setFormData({...formData, status: e.target.value});
+                          }}
                           className="w-full border border-slate-200 bg-slate-50/50 text-slate-800 font-black rounded-xl px-4 py-3 focus:bg-white focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 outline-none transition-all"
                         >
                           <option value="active">Active</option>
                           <option value="inactive">Suspended</option>
                         </select>
+                        {statusLocked && (
+                          <p className="text-[11px] text-amber-600 font-medium tracking-wide mt-1.5 ml-1">
+                            The last active admin cannot be suspended.
+                          </p>
+                        )}
                       </div>
                    </div>
                 </form>

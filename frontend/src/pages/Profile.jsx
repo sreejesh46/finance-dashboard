@@ -9,6 +9,10 @@ const Profile = () => {
   const [loading, setLoading] = useState(false);
   const [avatar, setAvatar] = useState(user?.avatar || '');
   const fileInputRef = useRef(null);
+  const accountStatus = user?.status === 'inactive' ? 'Inactive' : 'Active';
+  const memberSince = user?.createdAt
+    ? new Date(user.createdAt).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+    : 'N/A';
   
   const [formData, setFormData] = useState({
     name: user?.name || '',
@@ -98,13 +102,13 @@ const Profile = () => {
                  <div className="w-full mt-8 pt-6 border-t border-slate-100 space-y-4">
                     <div className="flex justify-between items-center text-sm">
                        <span className="text-slate-500 font-semibold">Account Status</span>
-                       <span className="text-emerald-500 font-bold flex items-center gap-2">
-                           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Active
+                       <span className={`font-bold flex items-center gap-2 ${user?.status === 'inactive' ? 'text-rose-500' : 'text-emerald-500'}`}>
+                           <span className={`w-2 h-2 rounded-full ${user?.status === 'inactive' ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'}`}></span> {accountStatus}
                         </span>
                     </div>
                     <div className="flex justify-between items-center text-sm">
                        <span className="text-slate-500 font-semibold">Member Since</span>
-                       <span className="text-slate-700 font-bold">Jan 2026</span>
+                       <span className="text-slate-700 font-bold">{memberSince}</span>
                     </div>
                  </div>
               </div>
@@ -187,7 +191,7 @@ const Profile = () => {
                           <input type="password" name="newPassword" value={formData.newPassword} onChange={handleChange} placeholder="••••••••" className="w-full py-3.5 pr-4 pl-3 bg-transparent outline-none font-semibold text-slate-900" />
                        </div>
                        <p className="text-xs text-slate-500 font-semibold flex items-start gap-1">
-                          <span className="text-rose-500">*</span> Minimum 8 characters.
+                          <span className="text-rose-500">*</span> Minimum 6 characters.
                        </p>
                     </div>
                  </div>

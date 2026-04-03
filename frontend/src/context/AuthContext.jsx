@@ -9,6 +9,10 @@ export const useAuth = () => useContext(AuthContext);
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [authTransition, setAuthTransition] = useState({
+    active: false,
+    message: ''
+  });
 
   // Configure axios defaults
   axios.defaults.baseURL = 'http://localhost:5000/api';
@@ -66,13 +70,30 @@ export const AuthProvider = ({ children }) => {
     toast.success('Logged out');
   };
 
+  const showAuthTransition = (message) => {
+    setAuthTransition({
+      active: true,
+      message
+    });
+  };
+
+  const hideAuthTransition = () => {
+    setAuthTransition({
+      active: false,
+      message: ''
+    });
+  };
+
   const value = {
     user,
     setUser,
     loading,
+    authTransition,
     login,
     register,
-    logout
+    logout,
+    showAuthTransition,
+    hideAuthTransition
   };
 
   return (

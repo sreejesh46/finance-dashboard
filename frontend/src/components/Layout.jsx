@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, ReceiptText, Users, LogOut, TrendingUp, Bell, Search, Loader2, CheckCircle2, Clock, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
+import { LayoutDashboard, ReceiptText, Users, LogOut, TrendingUp, Bell, Search, Loader2, CheckCircle2, Clock, PanelLeftClose, PanelLeftOpen, Sun, Moon } from 'lucide-react';
 import clsx from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
@@ -12,6 +13,7 @@ function cx(...inputs) {
 
 const Layout = () => {
   const { user, logout, showAuthTransition, hideAuthTransition } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -127,11 +129,17 @@ const Layout = () => {
   const filteredNavItems = navItems.filter(item => item.roles.includes(user?.role || 'Viewer'));
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#dfe4ea] text-slate-900 font-sans selection:bg-sky-100">
+    <div className={cx(
+      "flex h-screen overflow-hidden font-sans transition-colors duration-300 selection:bg-sky-100",
+      isDark ? "bg-[#17191A] text-slate-100" : "bg-[#dfe4ea] text-slate-900"
+    )}>
       {/* Mobile Sidebar Overlay */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 z-40 bg-slate-900/20 backdrop-blur-sm lg:hidden transition-all"
+          className={cx(
+            "fixed inset-0 z-40 backdrop-blur-sm lg:hidden transition-all",
+            isDark ? "bg-slate-950/50" : "bg-slate-900/20"
+          )}
           onClick={() => setSidebarOpen(false)}
         />
       )}
@@ -139,13 +147,26 @@ const Layout = () => {
       {/* Sidebar */}
       <div className={cx(
         "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white/95 shadow-[0_20px_50px_rgba(15,23,42,0.06)] transform transition-[width,transform] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] lg:translate-x-0 lg:static lg:inset-auto",
+        isDark
+          ? "border-slate-800/80 bg-[#111315]/95 shadow-[0_20px_60px_rgba(2,6,23,0.45)]"
+          : "border-slate-200 bg-white/95 shadow-[0_20px_50px_rgba(15,23,42,0.06)]",
         sidebarOpen ? "translate-x-0" : "-translate-x-full",
         isCollapsed ? "w-20" : "w-72"
       )}>
         {/* Brand Header */}
-        <div className={cx("flex h-20 items-center flex-shrink-0 border-b border-slate-200 relative transition-[padding] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]", isCollapsed ? "justify-center px-3" : "px-6")}>
-          <div className="relative flex items-center w-full text-slate-950 font-bold text-2xl tracking-tight">
-            <div className="bg-slate-950 p-1.5 rounded-xl shadow-sm flex-shrink-0">
+        <div className={cx(
+          "flex h-20 items-center flex-shrink-0 relative transition-[padding,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isDark ? "border-b border-slate-800/80" : "border-b border-slate-200",
+          isCollapsed ? "justify-center px-3" : "px-6"
+        )}>
+          <div className={cx(
+            "relative flex items-center w-full font-bold text-2xl tracking-tight",
+            isDark ? "text-slate-50" : "text-slate-950"
+          )}>
+            <div className={cx(
+              "p-1.5 rounded-xl shadow-sm flex-shrink-0",
+              isDark ? "bg-[#156EF3] shadow-[0_12px_30px_rgba(21,110,243,0.35)]" : "bg-slate-950"
+            )}>
                 <TrendingUp className="w-5 h-5 text-white" />
             </div>
             <div className={cx(
@@ -153,7 +174,10 @@ const Layout = () => {
               isCollapsed ? "pointer-events-none translate-x-2 opacity-0" : "translate-x-0 opacity-100"
             )}>
               <span className="whitespace-nowrap">FinDash</span>
-              <span className="text-[10px] uppercase tracking-widest bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full ml-1 font-semibold border border-slate-200 whitespace-nowrap">PRO</span>
+              <span className={cx(
+                "text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full ml-1 font-semibold border whitespace-nowrap",
+              isDark ? "bg-[#26272E] text-slate-400 border-slate-700" : "bg-slate-100 text-slate-500 border-slate-200"
+              )}>PRO</span>
             </div>
           </div>
         </div>
@@ -164,7 +188,10 @@ const Layout = () => {
             "overflow-hidden transition-all duration-300",
             isCollapsed ? "max-h-0 opacity-0 mb-0" : "max-h-10 opacity-100 mb-3"
           )}>
-            <p className="px-3 text-xs font-semibold text-slate-400 uppercase tracking-wider">Main Menu</p>
+            <p className={cx(
+              "px-3 text-xs font-semibold uppercase tracking-wider",
+              isDark ? "text-slate-500" : "text-slate-400"
+            )}>Main Menu</p>
           </div>
           <nav className="flex-1 space-y-1.5">
             {filteredNavItems.map((item) => (
@@ -177,8 +204,12 @@ const Layout = () => {
                   "flex items-center gap-3 py-3 text-sm font-medium rounded-2xl border border-transparent bg-transparent transition-[background-color,color,border-color,box-shadow,transform] duration-300 ease-out group relative overflow-hidden will-change-transform",
                   isCollapsed ? "justify-center px-0" : "justify-start px-3",
                   isActive 
-                    ? "text-slate-950 bg-white border-slate-200 shadow-sm" 
-                    : "text-slate-500 hover:bg-slate-50 hover:text-slate-950"
+                    ? isDark
+                      ? "text-white bg-[#26272E] border-slate-700 shadow-[0_10px_30px_rgba(2,6,23,0.25)]"
+                      : "text-slate-950 bg-white border-slate-200 shadow-sm"
+                    : isDark
+                      ? "text-slate-400 hover:bg-[#26272E]/70 hover:text-white"
+                      : "text-slate-500 hover:bg-slate-50 hover:text-slate-950"
                 )}
               >
                 {({ isActive }) => (
@@ -205,25 +236,46 @@ const Layout = () => {
 
         {/* User Card */}
         <div className={cx("mt-auto border-t border-slate-200", isCollapsed ? "p-2" : "p-4")}>
-           <Link to="/profile" className={cx("flex items-center gap-3 rounded-3xl bg-slate-50 border border-slate-200 hover:bg-white transition-colors cursor-pointer group", isCollapsed ? "p-2 justify-center" : "p-3")}>
+           <Link to="/profile" className={cx(
+             "flex items-center gap-3 rounded-3xl transition-colors cursor-pointer group border",
+             isDark
+               ? "bg-[#26272E] border-slate-800 hover:bg-[#2d2e36]"
+               : "bg-slate-50 border-slate-200 hover:bg-white",
+             isCollapsed ? "p-2 justify-center" : "p-3"
+           )}>
               {user?.avatar ? (
                   <img src={user.avatar} alt={user.name} className="w-10 h-10 rounded-full object-cover shadow-sm border-2 border-white group-hover:scale-105 transition-transform duration-300" />
               ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-950 flex flex-shrink-0 items-center justify-center text-white font-bold shadow-sm border-2 border-white group-hover:scale-105 transition-transform duration-300">
+                  <div className={cx(
+                    "w-10 h-10 rounded-full flex flex-shrink-0 items-center justify-center text-white font-bold shadow-sm group-hover:scale-105 transition-transform duration-300",
+                    isDark ? "bg-[#156EF3] border-2 border-[#111315]" : "bg-slate-950 border-2 border-white"
+                  )}>
                       {user?.name?.charAt(0).toUpperCase()}
                   </div>
               )}
               {!isCollapsed && (
                 <div className="flex-1 min-w-0">
-                    <p className="text-sm font-bold text-slate-950 truncate transition-colors">{user?.name}</p>
-                    <p className="text-xs text-slate-500 font-medium tracking-wide">{user?.role}</p>
+                    <p className={cx(
+                      "text-sm font-bold truncate transition-colors",
+                      isDark ? "text-slate-100" : "text-slate-950"
+                    )}>{user?.name}</p>
+                    <p className={cx(
+                      "text-xs font-medium tracking-wide",
+                      isDark ? "text-slate-500" : "text-slate-500"
+                    )}>{user?.role}</p>
                 </div>
               )}
            </Link>
            <button 
              onClick={handleLogout}
              title={isCollapsed ? "Log out" : undefined}
-             className={cx("relative mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-sm font-semibold text-slate-500 rounded-2xl hover:bg-rose-50 hover:text-rose-600 transition-all border border-transparent hover:border-rose-100 cursor-pointer", isCollapsed ? "px-0" : "justify-start px-3")}
+             className={cx(
+               "relative mt-3 flex w-full items-center justify-center gap-2 py-2.5 text-sm font-semibold rounded-2xl transition-all border border-transparent cursor-pointer",
+               isDark
+                 ? "text-slate-400 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20"
+                 : "text-slate-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-100",
+               isCollapsed ? "px-0" : "justify-start px-3"
+             )}
            >
              <LogOut className={isCollapsed ? "w-5 h-5" : "w-4 h-4"} />
              <span className={cx(
@@ -241,13 +293,26 @@ const Layout = () => {
         
         {/* Dynamic Frosted Topbar */}
         <div className="absolute top-0 w-full z-20 pointer-events-none">
-             <div className="h-20 bg-gradient-to-b from-[#dfe4ea] to-transparent"></div>
+             <div className={cx(
+               "h-20 bg-gradient-to-b",
+               isDark ? "from-[#17191A] to-transparent" : "from-[#dfe4ea] to-transparent"
+             )}></div>
         </div>
 
-        <div className="relative z-30 flex-shrink-0 flex h-20 items-center justify-between px-4 sm:px-8 border-b border-slate-200 bg-white/80 backdrop-blur-md supports-[backdrop-filter]:bg-white/70">
+        <div className={cx(
+          "relative z-30 flex-shrink-0 flex h-20 items-center justify-between px-4 sm:px-8 border-b backdrop-blur-md transition-colors duration-300",
+          isDark
+            ? "border-slate-800/80 bg-[#17191A]/90 supports-[backdrop-filter]:bg-[#17191A]/80"
+            : "border-slate-200 bg-white/80 supports-[backdrop-filter]:bg-white/70"
+        )}>
             <button
               onClick={toggleSidebar}
-              className="text-slate-500 hover:text-slate-950 focus:outline-none p-2 rounded-xl hover:bg-slate-100 transition-all duration-300 mr-4 cursor-pointer border border-transparent hover:border-slate-200"
+              className={cx(
+                "focus:outline-none p-2 rounded-xl transition-all duration-300 mr-4 cursor-pointer border",
+                isDark
+                  ? "text-slate-400 hover:text-white hover:bg-[#26272E] border-slate-800 hover:border-slate-700"
+                  : "text-slate-500 hover:text-slate-950 hover:bg-slate-100 border-transparent hover:border-slate-200"
+              )}
               aria-label={isCollapsed || !sidebarOpen ? "Open sidebar" : "Close sidebar"}
             >
               <div className="relative h-6 w-6">
@@ -267,33 +332,46 @@ const Layout = () => {
                 {user?.role !== 'Viewer' && (
                 <div ref={searchRef} className="hidden sm:flex flex-col max-w-sm w-full min-w-0 relative">
                     <div className="relative flex items-center">
-                        <Search className="w-4 h-4 absolute left-3 text-slate-400" />
+                        <Search className={cx("w-4 h-4 absolute left-3", isDark ? "text-slate-500" : "text-slate-400")} />
                         <input 
                            type="text" 
                            placeholder="Quick search..." 
                            value={searchQuery}
                            onChange={(e) => setSearchQuery(e.target.value)}
                            onFocus={() => { if (searchQuery.trim()) setShowSearchResults(true); }}
-                           className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/15 focus:border-sky-400 focus:bg-white transition-all shadow-sm" 
+                           className={cx(
+                            "w-full pl-9 pr-4 py-2.5 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/15 focus:border-sky-400 transition-all shadow-sm",
+                            isDark
+                              ? "bg-[#26272E] border border-slate-800 text-slate-100 placeholder:text-slate-500 focus:bg-[#26272E]"
+                              : "bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white"
+                           )} 
                         />
                         {isSearching && <Loader2 className="w-4 h-4 absolute right-3 text-sky-600 animate-spin" />}
                     </div>
                     
                     {/* Search Dropdown */}
                     {showSearchResults && (
-                        <div className="absolute top-full mt-2 w-full bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden z-50">
+                        <div className={cx(
+                          "absolute top-full mt-2 w-full rounded-2xl overflow-hidden z-50 border",
+                          isDark
+                            ? "bg-[#26272E] border-slate-800 shadow-xl shadow-black/30"
+                            : "bg-white border-slate-200 shadow-xl shadow-slate-200/50"
+                        )}>
                             {searchResults.length > 0 ? (
-                                <ul className="divide-y divide-slate-100">
+                                <ul className={cx(isDark ? "divide-y divide-slate-800" : "divide-y divide-slate-100")}>
                                     {searchResults.map(record => (
                                         <li key={record._id}>
                                            <Link 
                                              to="/records" 
                                              onClick={() => { setShowSearchResults(false); setSearchQuery(''); }}
-                                             className="block p-3 hover:bg-slate-50 transition-colors"
+                                             className={cx(
+                                               "block p-3 transition-colors",
+                                               isDark ? "hover:bg-[#1f2025]" : "hover:bg-slate-50"
+                                             )}
                                            >
-                                              <p className="text-sm font-semibold text-slate-800 tracking-tight">{record.category}</p>
+                                              <p className={cx("text-sm font-semibold tracking-tight", isDark ? "text-slate-100" : "text-slate-800")}>{record.category}</p>
                                               <div className="flex justify-between items-center mt-1">
-                                                <p className="text-xs text-slate-500 truncate max-w-[180px]">{record.notes || 'No description'}</p>
+                                                <p className={cx("text-xs truncate max-w-[180px]", isDark ? "text-slate-400" : "text-slate-500")}>{record.notes || 'No description'}</p>
                                                 <p className={cx("text-xs font-bold", record.type === 'income' ? 'text-emerald-500' : 'text-slate-600')}>
                                                     {record.type === 'income' ? '+' : '-'}{new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(record.amount)}
                                                 </p>
@@ -303,45 +381,94 @@ const Layout = () => {
                                     ))}
                                 </ul>
                             ) : (
-                                <div className="p-4 text-center text-sm font-medium text-slate-500">No records found</div>
+                                <div className={cx("p-4 text-center text-sm font-medium", isDark ? "text-slate-400" : "text-slate-500")}>No records found</div>
                             )}
                         </div>
                     )}
                 </div>
                 )}
 
+                <button
+                    onClick={toggleTheme}
+                    className={cx(
+                      "relative p-2 rounded-full shadow-sm border transition-all active:scale-95 cursor-pointer",
+                      isDark
+                        ? "text-amber-300 bg-[#26272E] border-slate-800 hover:text-amber-200 hover:border-slate-700"
+                        : "text-slate-500 bg-slate-50 border-slate-200 hover:text-slate-950 hover:shadow-md"
+                    )}
+                    title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                    aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
+                >
+                    {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
+
                 {/* Notifications */}
                 <div ref={notifRef} className="relative">
                     <button 
                         onClick={() => { setShowNotifications(!showNotifications); if (!showNotifications) fetchNotifications(); }}
-                        className="relative p-2 text-slate-400 hover:text-slate-950 bg-slate-50 rounded-full shadow-sm border border-slate-200 hover:shadow-md transition-all active:scale-95 cursor-pointer"
+                        className={cx(
+                          "relative p-2 rounded-full shadow-sm border transition-all active:scale-95 cursor-pointer",
+                          isDark
+                            ? "text-slate-400 hover:text-white bg-[#26272E] border-slate-800 hover:border-slate-700"
+                            : "text-slate-400 hover:text-slate-950 bg-slate-50 border-slate-200 hover:shadow-md"
+                        )}
                     >
-                        {unreadCount > 0 && <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 border-2 border-white rounded-full flex items-center justify-center text-[8px] font-bold text-white">{unreadCount}</span>}
+                        {unreadCount > 0 && <span className={cx(
+                          "absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-rose-500 rounded-full flex items-center justify-center text-[8px] font-bold text-white",
+                          isDark ? "border-2 border-[#17191A]" : "border-2 border-white"
+                        )}>{unreadCount}</span>}
                         <Bell className="w-5 h-5" />
                     </button>
                     
                     {/* Notifications Dropdown */}
                     {showNotifications && (
-                        <div className="absolute top-full right-0 mt-2 w-80 max-h-96 flex flex-col bg-white border border-slate-200 rounded-2xl shadow-xl shadow-slate-200/50 overflow-hidden z-50">
-                            <div className="p-3 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
-                                <h4 className="text-sm font-black text-slate-800">Notifications</h4>
+                        <div className={cx(
+                          "absolute top-full right-0 mt-2 w-80 max-h-96 flex flex-col rounded-2xl overflow-hidden z-50 border",
+                          isDark
+                            ? "bg-[#26272E] border-slate-800 shadow-xl shadow-black/30"
+                            : "bg-white border-slate-200 shadow-xl shadow-slate-200/50"
+                        )}>
+                            <div className={cx(
+                              "p-3 border-b flex items-center justify-between",
+                              isDark ? "border-slate-800 bg-[#1f2025]" : "border-slate-200 bg-slate-50/70"
+                            )}>
+                                <h4 className={cx("text-sm font-black", isDark ? "text-slate-100" : "text-slate-800")}>Notifications</h4>
                                 {unreadCount > 0 && (
                                     <button onClick={markAllAsRead} className="text-xs font-bold text-sky-600 hover:text-sky-700">Mark all as read</button>
                                 )}
                             </div>
                             <div className="flex-1 overflow-y-auto custom-scrollbar">
                                 {notifications.length > 0 ? (
-                                    <ul className="divide-y divide-slate-50">
+                                    <ul className={cx(isDark ? "divide-y divide-slate-800" : "divide-y divide-slate-50")}>
                                         {notifications.map(notif => (
-                                            <li key={notif._id} className={cx("p-3 flex gap-3 transition-colors", notif.isRead ? "opacity-60" : "bg-sky-50/50")}>
+                                            <li key={notif._id} className={cx(
+                                              "p-3 flex gap-3 transition-colors",
+                                              notif.isRead
+                                                ? "opacity-60"
+                                                : isDark
+                                                  ? "bg-sky-500/10"
+                                                  : "bg-sky-50/50"
+                                            )}>
                                                 <div className="mt-0.5">
                                                     {notif.type === 'success' ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : 
                                                      notif.type === 'alert' ? <Bell className="w-4 h-4 text-rose-500" /> :
                                                      <Clock className="w-4 h-4 text-sky-500" />}
                                                 </div>
                                                 <div className="flex-1">
-                                                    <p className={cx("text-sm transition-all", notif.isRead ? "text-slate-600 font-medium" : "text-slate-800 font-semibold")}>{notif.message}</p>
-                                                    <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mt-1.5">{new Date(notif.createdAt).toLocaleDateString()}</p>
+                                                    <p className={cx(
+                                                      "text-sm transition-all",
+                                                      notif.isRead
+                                                        ? isDark
+                                                          ? "text-slate-400 font-medium"
+                                                          : "text-slate-600 font-medium"
+                                                        : isDark
+                                                          ? "text-slate-100 font-semibold"
+                                                          : "text-slate-800 font-semibold"
+                                                    )}>{notif.message}</p>
+                                                    <p className={cx(
+                                                      "text-[10px] font-semibold uppercase tracking-wider mt-1.5",
+                                                      isDark ? "text-slate-500" : "text-slate-400"
+                                                    )}>{new Date(notif.createdAt).toLocaleDateString()}</p>
                                                 </div>
                                                 {!notif.isRead && (
                                                     <button onClick={() => markAsRead(notif._id)} className="w-2 h-2 rounded-full bg-sky-600 flex-shrink-0 self-center hover:scale-150 transition-transform" title="Mark as read" />
@@ -350,8 +477,11 @@ const Layout = () => {
                                         ))}
                                     </ul>
                                 ) : (
-                                    <div className="p-6 text-center text-sm font-medium text-slate-500 flex flex-col items-center">
-                                        <Bell className="w-8 h-8 text-slate-200 mb-2" />
+                                    <div className={cx(
+                                      "p-6 text-center text-sm font-medium flex flex-col items-center",
+                                      isDark ? "text-slate-400" : "text-slate-500"
+                                    )}>
+                                        <Bell className={cx("w-8 h-8 mb-2", isDark ? "text-slate-700" : "text-slate-200")} />
                                         You're all caught up!
                                     </div>
                                 )}
@@ -363,10 +493,19 @@ const Layout = () => {
         </div>
 
         {/* Page Content Scrollable Area */}
-        <main className="flex-1 relative overflow-y-auto overflow-x-hidden focus:outline-none bg-transparent scroll-smooth">
+        <main className={cx(
+          "flex-1 relative overflow-y-auto overflow-x-hidden focus:outline-none scroll-smooth transition-colors duration-300",
+          isDark ? "bg-transparent" : "bg-transparent"
+        )}>
           {/* Subtle Background Elements */}
-          <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-white/40 blur-[120px] rounded-full pointer-events-none"></div>
-          <div className="absolute top-[20%] right-[-10%] w-[30%] h-[40%] bg-sky-200/25 blur-[120px] rounded-full pointer-events-none"></div>
+          <div className={cx(
+            "absolute top-[-10%] left-[-10%] w-[50%] h-[50%] blur-[120px] rounded-full pointer-events-none",
+            isDark ? "bg-sky-500/8" : "bg-white/40"
+          )}></div>
+          <div className={cx(
+            "absolute top-[20%] right-[-10%] w-[30%] h-[40%] blur-[120px] rounded-full pointer-events-none",
+            isDark ? "bg-indigo-500/8" : "bg-sky-200/25"
+          )}></div>
 
           <div className="py-8 px-4 sm:px-8 h-full relative z-10 mx-auto max-w-[1600px] min-w-0">
              <Outlet />

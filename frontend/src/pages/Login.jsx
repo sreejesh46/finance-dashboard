@@ -38,7 +38,7 @@ const Login = () => {
       footerText="Don't have an account?"
       footerLinkText="Sign up"
       footerLinkTo="/register"
-      bottomCopy="Join finance teams who use FinDash to manage records, monitor dashboards, and review access with confidence."
+      bottomCopy="Track, analyze, and manage your finances with confidence."
     >
       <form className="space-y-3.5" onSubmit={handleSubmit}>
         <div className="rounded-[22px] border border-slate-300 bg-white px-5 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">

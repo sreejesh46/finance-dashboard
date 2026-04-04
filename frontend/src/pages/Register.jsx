@@ -45,7 +45,7 @@ const Register = () => {
       footerText="Already have an account?"
       footerLinkText="Login"
       footerLinkTo="/login"
-      bottomCopy="Set up your FinDash workspace to track records, view summaries, and manage access in one secure dashboard."
+      bottomCopy="Create your FinDash workspace to track records, gain insights, and manage access securely."
     >
       <form className="space-y-3.5" onSubmit={handleSubmit}>
         <div className="rounded-[22px] border border-slate-300 bg-white px-5 py-3 shadow-[0_8px_20px_rgba(15,23,42,0.04)]">

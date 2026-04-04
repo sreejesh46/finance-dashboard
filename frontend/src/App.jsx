@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { useTheme } from './context/ThemeContext';
 import Layout from './components/Layout';
 import Login from './pages/Login';
 import Register from './pages/Register';
@@ -61,11 +62,32 @@ function AuthTransitionOverlay() {
   );
 }
 
+function ThemeTransitionOverlay() {
+  const { isDark, themeTransitionActive } = useTheme();
+
+  return (
+    <div
+      className={`pointer-events-none fixed inset-0 z-[190] transition-opacity duration-300 ${
+        themeTransitionActive ? 'opacity-100' : 'opacity-0'
+      }`}
+    >
+      <div
+        className={`absolute inset-0 ${
+          isDark
+            ? 'bg-[radial-gradient(circle_at_top,_rgba(59,130,246,0.12),_transparent_45%),linear-gradient(180deg,rgba(23,25,26,0.78),rgba(23,25,26,0.88))]'
+            : 'bg-[radial-gradient(circle_at_top,_rgba(191,219,254,0.45),_transparent_45%),linear-gradient(180deg,rgba(255,255,255,0.72),rgba(241,245,249,0.82))]'
+        } backdrop-blur-[2px]`}
+      />
+    </div>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <Router>
         <AppRoutes />
+        <ThemeTransitionOverlay />
         <AuthTransitionOverlay />
         <Toaster position="top-right" />
       </Router>

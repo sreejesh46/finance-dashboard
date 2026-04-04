@@ -1,3 +1,4 @@
+@import url("https://fonts.cdnfonts.com/css/sf-pro-display");
 @import "tailwindcss";
 
 @theme {
@@ -7,9 +8,24 @@
 body {
   background-color: var(--color-gray-50);
   color: var(--color-gray-900);
+  font-family: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+button:not(:disabled),
+a[href],
+label[for],
+input[type="checkbox"],
+input[type="radio"],
+select {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 /* Custom Webkit Scrollbar for Premium Feel */
@@ -29,6 +45,35 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+.dark-theme body,
+body.dark-theme {
+  background: #17191A;
+  color: #e2e8f0;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb,
+body.dark-theme ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+
+.dark-theme ::-webkit-scrollbar-thumb:hover,
+body.dark-theme ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition:
+    background-color 220ms ease,
+    border-color 220ms ease,
+    color 220ms ease,
+    box-shadow 220ms ease,
+    fill 220ms ease,
+    stroke 220ms ease,
+    opacity 220ms ease !important;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
